@@ -8,17 +8,21 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: #0f172a;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0d1b2a;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             overflow: hidden;
         }
+        #status {
+            font-size: 1.5rem;
+            color: #e0e1dd;
+        }
         .slide-container {
-            display: flex;
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -26,52 +30,56 @@
             max-height: 90vh;
             text-align: center;
         }
-        img {
-            max-height: 60vh;
+        .img-wrapper {
             max-width: 80vw;
-            object-fit: contain;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-height: 65vh;
             margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+        img {
+            max-width: 100%;
+            max-height: 65vh;
+            object-fit: contain;
+            display: block;
         }
         h1 {
-            margin: 5px 0;
+            margin: 10px 0 5px 0;
             font-size: 2.5rem;
-            color: #f8fafc;
+            color: #ffffff;
         }
-        p {
-            margin: 5px 0;
-            font-size: 1.4rem;
-            color: #94a3b8;
-        }
-        .status {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: #64748b;
-            font-size: 1rem;
+        h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #778da9;
+            font-weight: 400;
         }
     </style>
 </head>
 <body>
 
-<div class="status" id="status">Loading submissions...</div>
+<div id="status">Loading submissions...</div>
 
-<div class="slide-container" id="slideContainer" style="display:none;">
-    <img id="ancestorImage" src="" alt="Ancestor Photo">
+<div class="slide-container" id="slideContainer">
+    <div class="img-wrapper">
+        <img id="ancestorImage" src="" alt="Ancestor Photo">
+    </div>
     <h1 id="ancestorName"></h1>
-    <p id="relationshipText"></p>
+    <h2 id="relationshipText"></h2>
 </div>
 
 <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzBhReZN56zxvbw1PA1s9b7aVrXcrN9zwZzr19FYOvzhap_dK3qkapKk0sZbwwJf4Zn/exec";
-
+    // REPLACE WITH YOUR WEB APP URL
+    const WEB_APP_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"; 
+    
     let slides = [];
     let currentIndex = 0;
 
     function fetchSlides() {
         fetch(WEB_APP_URL)
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 if (data && data.length > 0) {
                     slides = data;
@@ -79,19 +87,34 @@
                     document.getElementById('slideContainer').style.display = 'flex';
                     showSlide();
                 } else {
-                    document.getElementById('status').innerText = "Waiting for submissions...";
+                    document.getElementById('status').innerText = "Waiting for Submissions...";
                 }
             })
-            .catch(error => {
-                console.error('Error fetching data:', error);
-                document.getElementById('status').innerText = "Error loading submissions. Retrying...";
+            .catch(err => {
+                console.error("Fetch error:", err);
             });
     }
 
     function showSlide() {
         if (slides.length === 0) return;
         const slide = slides[currentIndex];
-        document.getElementById('ancestorImage').src = slide.imageUrl;
+        
+        let imgUrl = slide.imageUrl;
+        let fileId = "";
+
+        // Extract Google Drive ID from standard view URL
+        if (imgUrl.includes('/d/')) {
+            fileId = imgUrl.split('/d/')[1].split('/')[0];
+        } else if (imgUrl.includes('id=')) {
+            fileId = imgUrl.split('id=')[1].split('&')[0];
+        }
+
+        // Convert to high-res direct image thumbnail link
+        if (fileId) {
+            imgUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
+        }
+
+        document.getElementById('ancestorImage').src = imgUrl;
         document.getElementById('ancestorName').innerText = slide.ancestorName;
         document.getElementById('relationshipText').innerText = `Submitted by ${slide.submitterName} (${slide.relationship})`;
     }
@@ -104,9 +127,12 @@
     }
 
     fetchSlides();
-    setInterval(fetchSlides, 30000); // Check for new entries every 30 seconds
-    setInterval(nextSlide, 8000);    // Switch slides every 8 seconds
+    setInterval(fetchSlides, 30000); // Check for new entries every 30s
+    setInterval(nextSlide, 7000);    // Rotate slide every 7s
 </script>
+
+</body>
+</html>
 
 </body>
 </html>
