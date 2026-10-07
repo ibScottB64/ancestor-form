@@ -48,10 +48,7 @@
             font-weight: bold;
             cursor: pointer;
         }
-        button:disabled { background-color: #cbd5e0; cursor: not-allowed; }
         #loading { display: none; text-align: center; margin-top: 15px; color: #4a5568; font-weight: 500; }
-        #success-message { display: none; text-align: center; color: #2f855a; background: #f0fff4; padding: 15px; border-radius: 6px; border: 1px solid #c6f6d5; }
-        iframe { display: none; }
     </style>
 </head>
 <body>
@@ -60,11 +57,8 @@
     <h2>Ancestor Photo Submission</h2>
     <p class="subtitle">Share a photo and details of your ancestor for our event slideshow.</p>
     
-    <!-- Hidden iframe targets response to prevent page reload -->
-    <iframe name="hidden_iframe" id="hidden_iframe"></iframe>
-
-    <!-- REPLACE THE action URL BELOW WITH YOUR WEB APP URL -->
-    <form id="submissionForm" action="https://script.google.com/macros/s/AKfycbzb3LTmrNDs-snNvwBq2X6IKOZXbFfr6Q9xctObouCubbD8hRnf5NNzWIKVq6JLuqNUFw/exec" method="POST" enctype="multipart/form-data" target="hidden_iframe">
+    <!-- Direct native submit to Google Apps Script -->
+    <form id="submissionForm" action="https://script.google.com/macros/s/AKfycbzb3LTmrNDs-snNvwBq2X6IKOZXbFfr6Q9xctObouCubbD8hRnf5NNzWIKVq6JLuqNUFw/exec" method="POST" enctype="multipart/form-data">
         <div class="form-group">
             <label for="submitterName">Your Name:</label>
             <input type="text" id="submitterName" name="submitterName" required placeholder="e.g., Jane Doe">
@@ -88,35 +82,13 @@
         <button type="submit" id="submitBtn">Submit Ancestor Info</button>
         <div id="loading">Uploading submission, please wait...</div>
     </form>
-
-    <div id="success-message">
-        <h3>Thank You!</h3>
-        <p>Your ancestor's information and photo have been successfully submitted.</p>
-        <button onclick="location.reload()" style="background-color: #4a5568; margin-top: 10px; border:none; color:white; padding:10px; border-radius:6px; cursor:pointer;">Submit Another</button>
-    </div>
 </div>
 
 <script>
-    const form = document.getElementById('submissionForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const loadingDiv = document.getElementById('loading');
-
-    form.addEventListener('submit', function() {
-        submitBtn.disabled = true;
-        loadingDiv.style.display = 'block';
+    document.getElementById('submissionForm').addEventListener('submit', function() {
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('loading').style.display = 'block';
     });
-
-    // Callback function called by the iframe when Google Apps Script responds
-    function onUploadSuccess() {
-        form.style.display = 'none';
-        document.getElementById('success-message').style.display = 'block';
-    }
-
-    function onUploadError(errMsg) {
-        alert('Upload failed: ' + errMsg);
-        submitBtn.disabled = false;
-        loadingDiv.style.display = 'none';
-    }
 </script>
 
 </body>
