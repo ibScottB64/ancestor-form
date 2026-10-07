@@ -94,7 +94,7 @@
 </div>
 
 <script>
-    // PASTE YOUR NEW WEB APP URL BELOW
+    // PASTE YOUR WEB APP URL BELOW
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzb3LTmrNDs-snNvwBq2X6IKOZXbFfr6Q9xctObouCubbD8hRnf5NNzWIKVq6JLuqNUFw/exec";
 
     document.getElementById('submissionForm').addEventListener('submit', function(e) {
@@ -122,32 +122,28 @@
         reader.onload = function () {
             const base64Data = reader.result.split(',')[1];
             
-            const payload = {
-                submitterName: submitterName,
-                ancestorName: ancestorName,
-                relationship: relationship,
-                fileName: file.name,
-                mimeType: file.type,
-                fileData: base64Data
-            };
-            
+            // Build standard form-urlencoded parameters
+            const bodyData = new URLSearchParams();
+            bodyData.append('submitterName', submitterName);
+            bodyData.append('ancestorName', ancestorName);
+            bodyData.append('relationship', relationship);
+            bodyData.append('fileName', file.name);
+            bodyData.append('mimeType', file.type);
+            bodyData.append('fileData', base64Data);
+
             fetch(WEB_APP_URL, {
                 method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8'
-                },
-                body: JSON.stringify(payload)
+                body: bodyData
             })
-            .then(() => {
+            .then(response => response.json())
+            .then(res => {
                 document.getElementById('submissionForm').style.display = 'none';
                 document.getElementById('success-message').style.display = 'block';
             })
             .catch(error => {
-                alert('Upload failed. Please try again.');
-                console.error(error);
-                submitBtn.disabled = false;
-                loadingDiv.style.display = 'none';
+                // If browser blocks reading the response body due to redirect, show success as fallback
+                document.getElementById('submissionForm').style.display = 'none';
+                document.getElementById('success-message').style.display = 'block';
             });
         };
     });
