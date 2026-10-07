@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ancestor Photo Submission</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 500px;
+        }
+        h2 { margin-top: 0; color: #1a365d; text-align: center; }
+        p.subtitle { text-align: center; color: #666; font-size: 0.95rem; margin-bottom: 25px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; color: #4a5568; }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        input[type="file"] { background: #fafafa; }
+        button {
+            width: 100%;
+            background-color: #3182ce;
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover { background-color: #2b6cb0; }
+        button:disabled { background-color: #cbd5e0; cursor: not-allowed; }
+        #loading { display: none; text-align: center; margin-top: 15px; color: #4a5568; font-weight: 500; }
+        #success-message { display: none; text-align: center; color: #2f855a; background: #f0fff4; padding: 15px; border-radius: 6px; border: 1px solid #c6f6d5; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Ancestor Photo Submission</h2>
+    <p class="subtitle">Share a photo and details of your ancestor for our event slideshow.</p>
+    
+    <form id="submissionForm">
+        <div class="form-group">
+            <label for="submitterName">Your Name:</label>
+            <input type="text" id="submitterName" required placeholder="e.g., Jane Doe">
+        </div>
+        
+        <div class="form-group">
+            <label for="ancestorName">Ancestor's Name:</label>
+            <input type="text" id="ancestorName" required placeholder="e.g., John Smith">
+        </div>
+        
+        <div class="form-group">
+            <label for="relationship">Your Relationship to Ancestor:</label>
+            <input type="text" id="relationship" required placeholder="e.g., Great-Grandfather">
+        </div>
+        
+        <div class="form-group">
+            <label for="photo">Ancestor's Photograph:</label>
+            <input type="file" id="photo" accept="image/*" required>
+        </div>
+        
+        <button type="submit" id="submitBtn">Submit Ancestor Info</button>
+        <div id="loading">Uploading submission, please wait...</div>
+    </form>
+
+    <div id="success-message">
+        <h3>Thank You!</h3>
+        <p>Your ancestor's information and photo have been successfully submitted.</p>
+        <button onclick="location.reload()" style="background-color: #4a5568; margin-top: 10px;">Submit Another</button>
+    </div>
+</div>
+
+<script>
+    // PASTE YOUR WEB APP URL BELOW BETWEEN THE QUOTES
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzBhReZN56zxvbw1PA1s9b7aVrXcrN9zwZzr19FYOvzhap_dK3qkapKk0sZbwwJf4Zn/exec";
+
+    document.getElementById('submissionForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitterName = document.getElementById('submitterName').value;
+        const ancestorName = document.getElementById('ancestorName').value;
+        const relationship = document.getElementById('relationship').value;
+        const fileInput = document.getElementById('photo');
+        
+        if (fileInput.files.length === 0) return;
+        
+        const file = fileInput.files[0];
+        const submitBtn = document.getElementById('submitBtn');
+        const loadingDiv = document.getElementById('loading');
+        
+        submitBtn.disabled = true;
+        loadingDiv.style.display = 'block';
+        
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function () {
+            // Extract base64 data string
+            const base64Data = reader.result.split(',')[1];
+            
+            const payload = {
+                submitterName: submitterName,
+                ancestorName: ancestorName,
+                relationship: relationship,
+                fileName: file.name,
+                mimeType: file.type,
+                fileData: base64Data
+            };
+            
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors', // standard workaround for Google Apps Script redirects
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(() => {
+                // Since 'no-cors' hides response details, we assume success if fetch completes
+                document.getElementById('submissionForm').style.display = 'none';
+                document.getElementById('success-message').style.display = 'block';
+            })
+            .catch(error => {
+                alert('An error occurred. Please try again.');
+                console.error('Error:', error);
+                submitBtn.disabled = false;
+                loadingDiv.style.display = 'none';
+            });
+        };
+        reader.onerror = function (error) {
+            alert('Error reading file.');
+            submitBtn.disabled = false;
+            loadingDiv.style.display = 'none';
+        };
+    });
+</script>
+
+</body>
+</html>
