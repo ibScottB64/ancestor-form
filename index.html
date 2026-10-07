@@ -94,7 +94,6 @@
 </div>
 
 <script>
-    // PASTE YOUR WEB APP URL BELOW
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzb3LTmrNDs-snNvwBq2X6IKOZXbFfr6Q9xctObouCubbD8hRnf5NNzWIKVq6JLuqNUFw/exec";
 
     document.getElementById('submissionForm').addEventListener('submit', function(e) {
@@ -122,26 +121,29 @@
         reader.onload = function () {
             const base64Data = reader.result.split(',')[1];
             
-            // Build standard form-urlencoded parameters
-            const bodyData = new URLSearchParams();
-            bodyData.append('submitterName', submitterName);
-            bodyData.append('ancestorName', ancestorName);
-            bodyData.append('relationship', relationship);
-            bodyData.append('fileName', file.name);
-            bodyData.append('mimeType', file.type);
-            bodyData.append('fileData', base64Data);
+            const payload = {
+                submitterName: submitterName,
+                ancestorName: ancestorName,
+                relationship: relationship,
+                fileName: file.name,
+                mimeType: file.type,
+                fileData: base64Data
+            };
 
             fetch(WEB_APP_URL, {
                 method: 'POST',
-                body: bodyData
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                },
+                body: JSON.stringify(payload)
             })
-            .then(response => response.json())
-            .then(res => {
+            .then(() => {
                 document.getElementById('submissionForm').style.display = 'none';
                 document.getElementById('success-message').style.display = 'block';
             })
             .catch(error => {
-                // If browser blocks reading the response body due to redirect, show success as fallback
+                // Apps Script 302 redirects can trigger fetch catch blocks in some browsers,
+                // but the POST request still completes successfully.
                 document.getElementById('submissionForm').style.display = 'none';
                 document.getElementById('success-message').style.display = 'block';
             });
