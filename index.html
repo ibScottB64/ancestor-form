@@ -57,8 +57,8 @@
     <h2>Ancestor Photo Submission</h2>
     <p class="subtitle">Share a photo and details of your ancestor for our event slideshow.</p>
     
-    <!-- Direct submit to Google Apps Script -->
-    <form id="submissionForm" action="https://script.google.com/macros/s/AKfycbzb3LTmrNDs-snNvwBq2X6IKOZXbFfr6Q9xctObouCubbD8hRnf5NNzWIKVq6JLuqNUFw/exec" method="POST" enctype="multipart/form-data">
+    <!-- Direct Submit to Apps Script -->
+    <form id="submissionForm" action="https://script.google.com/macros/s/AKfycbzb3LTmrNDs-snNvwBq2X6IKOZXbFfr6Q9xctObouCubbD8hRnf5NNzWIKVq6JLuqNUFw/exec" method="POST">
         <div class="form-group">
             <label for="submitterName">Your Name:</label>
             <input type="text" id="submitterName" name="submitterName" required placeholder="e.g., Jane Doe">
@@ -75,19 +75,80 @@
         </div>
         
         <div class="form-group">
-            <label for="photo">Ancestor's Photograph:</label>
-            <input type="file" id="photo" name="photo" accept="image/*" required>
+            <label for="photoPicker">Ancestor's Photograph:</label>
+            <input type="file" id="photoPicker" accept="image/*" required>
         </div>
+
+        <!-- Hidden inputs store base64 image data -->
+        <input type="hidden" id="fileData" name="fileData">
+        <input type="hidden" id="fileName" name="fileName">
+        <input type="hidden" id="mimeType" name="mimeType">
         
         <button type="submit" id="submitBtn">Submit Ancestor Info</button>
-        <div id="loading">Uploading submission, please wait...</div>
+        <div id="loading">Processing and uploading image, please wait...</div>
     </form>
 </div>
 
 <script>
-    document.getElementById('submissionForm').addEventListener('submit', function() {
-        document.getElementById('submitBtn').disabled = true;
-        document.getElementById('loading').style.display = 'block';
+    const form = document.getElementById('submissionForm');
+    const photoPicker = document.getElementById('photoPicker');
+    const submitBtn = document.getElementById('submitBtn');
+    const loadingDiv = document.getElementById('loading');
+
+    form.addEventListener('submit', function(e) {
+        if (!document.getElementById('fileData').value) {
+            e.preventDefault(); // Pause form submission until photo is compressed
+            
+            if (photoPicker.files.length === 0) {
+                alert("Please select a photo.");
+                return;
+            }
+
+            submitBtn.disabled = true;
+            loadingDiv.style.display = 'block';
+
+            const file = photoPicker.files[0];
+            const reader = new FileReader();
+
+            reader.readAsDataURL(file);
+            reader.onload = function(event) {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_SIZE = 1200;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_SIZE) {
+                            height *= MAX_SIZE / width;
+                            width = MAX_SIZE;
+                        }
+                    } else {
+                        if (height > MAX_SIZE) {
+                            width *= MAX_SIZE / height;
+                            height = MAX_SIZE;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                    const base64Data = compressedDataUrl.split(',')[1];
+
+                    document.getElementById('fileData').value = base64Data;
+                    document.getElementById('fileName').value = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+                    document.getElementById('mimeType').value = "image/jpeg";
+
+                    // Resume native form POST now that data is populated
+                    form.submit();
+                };
+            };
+        }
     });
 </script>
 
