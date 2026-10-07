@@ -3,130 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ancestor Slideshow</title>
+    <title>Ancestor Memory Slideshow</title>
     <style>
-        body {
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            background-color: #0d1b2a;
-            color: white;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #0d1117;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        .slideshow-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            overflow: hidden;
         }
-        #status {
-            font-size: 1.5rem;
-            color: #e0e1dd;
-        }
-        .slide-container {
-            display: none;
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1.2s ease-in-out;
+            display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .slide.active {
+            opacity: 1;
+            z-index: 2;
+        }
+
+        .image-wrapper {
+            flex: 1;
             max-width: 90vw;
-            max-height: 90vh;
+            max-height: 75vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .image-wrapper img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .caption-card {
+            background: rgba(22, 27, 34, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 20px 35px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            max-width: 800px;
+        }
+
+        .ancestor-name {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #f0f6fc;
+            margin-bottom: 6px;
+        }
+
+        .relationship-info {
+            font-size: 1.2rem;
+            color: #8b949e;
+        }
+
+        .relationship-info span {
+            color: #58a6ff;
+            font-weight: 600;
+        }
+
+        /* Loading / Waiting state */
+        #status-screen {
+            font-size: 1.5rem;
+            color: #8b949e;
             text-align: center;
         }
-        .img-wrapper {
-            max-width: 80vw;
-            max-height: 65vh;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border-radius: 8px;
-            overflow: hidden;
-            background: #000;
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.1);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border-left-color: #58a6ff;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px auto;
         }
-        img {
-            max-width: 100%;
-            max-height: 65vh;
-            object-fit: contain;
-            display: block;
-        }
-        h1 {
-            margin: 10px 0 5px 0;
-            font-size: 2.5rem;
-            color: #ffffff;
-        }
-        h2 {
-            margin: 0;
-            font-size: 1.5rem;
-            color: #778da9;
-            font-weight: 400;
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
 
-<div id="status">Loading submissions...</div>
-
-<div class="slide-container" id="slideContainer">
-    <div class="img-wrapper">
-        <img id="ancestorImage" src="" alt="Ancestor Photo">
+<div class="slideshow-container" id="slideshowContainer">
+    <div id="status-screen">
+        <div class="spinner"></div>
+        <p id="status-text">Loading ancestor slideshow...</p>
     </div>
-    <h1 id="ancestorName"></h1>
-    <h2 id="relationshipText"></h2>
 </div>
 
 <script>
-    // PASTE YOUR NEW WEB APP URL BELOW
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzb3LTmrNDs-snNvwBq2X6IKOZXbFfr6Q9xctObouCubbD8hRnf5NNzWIKVq6JLuqNUFw/exec"; 
-    
-    let slides = [];
-    let currentIndex = 0;
+    // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzb3LTmrNDs-snNvwBq2X6IKOZXbFfr6Q9xctObouCubbD8hRnf5NNzWIKVq6JLuqNUFw/exec";
 
-    function fetchSlides() {
-        fetch(WEB_APP_URL)
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.length > 0) {
-                    slides = data;
-                    document.getElementById('status').style.display = 'none';
-                    document.getElementById('slideContainer').style.display = 'flex';
-                    showSlide();
-                } else {
-                    document.getElementById('status').innerText = "Waiting for Submissions...";
+    const SLIDE_DURATION = 6000; // Time per slide in milliseconds (6 seconds)
+    const REFRESH_INTERVAL = 30000; // Check for new submissions every 30 seconds
+
+    let slidesData = [];
+    let currentIndex = 0;
+    let timer = null;
+
+    async function fetchSubmissions() {
+        try {
+            const response = await fetch(WEB_APP_URL);
+            const data = await response.json();
+
+            // Filter out entries that don't have a valid image URL
+            const validData = data.filter(item => item.imageUrl && item.imageUrl.trim().length > 0);
+
+            if (validData.length === 0) {
+                if (slidesData.length === 0) {
+                    document.getElementById('status-text').innerText = "No ancestor photos submitted yet.";
                 }
-            })
-            .catch(err => {
-                console.error("Fetch error:", err);
-            });
+                return;
+            }
+
+            const isFirstLoad = (slidesData.length === 0);
+            slidesData = validData;
+
+            if (isFirstLoad) {
+                initSlideshow();
+            }
+        } catch (error) {
+            console.error("Error fetching slideshow data:", error);
+            if (slidesData.length === 0) {
+                document.getElementById('status-text').innerText = "Unable to load slideshow data.";
+            }
+        }
     }
 
-    function showSlide() {
-        if (slides.length === 0) return;
-        const slide = slides[currentIndex];
-        
-        let imgUrl = slide.imageUrl;
-        let fileId = "";
+    function initSlideshow() {
+        const container = document.getElementById('slideshowContainer');
+        container.innerHTML = ''; // Clear loading screen
 
-        if (imgUrl.includes('/d/')) {
-            fileId = imgUrl.split('/d/')[1].split('/')[0];
-        } else if (imgUrl.includes('id=')) {
-            fileId = imgUrl.split('id=')[1].split('&')[0];
+        renderSlide(currentIndex);
+        startTimer();
+    }
+
+    function renderSlide(index) {
+        const container = document.getElementById('slideshowContainer');
+        const item = slidesData[index];
+
+        const slideDiv = document.createElement('div');
+        slideDiv.className = 'slide active';
+
+        slideDiv.innerHTML = `
+            <div class="image-wrapper">
+                <img src="${item.imageUrl}" alt="${item.ancestorName}">
+            </div>
+            <div class="caption-card">
+                <div class="ancestor-name">${item.ancestorName}</div>
+                <div class="relationship-info">
+                    ${item.relationship} of <span>${item.submitterName}</span>
+                </div>
+            </div>
+        `;
+
+        // Keep current slide visible, fade in new one
+        const oldSlide = container.querySelector('.slide.active');
+        container.appendChild(slideDiv);
+
+        if (oldSlide) {
+            setTimeout(() => {
+                oldSlide.style.opacity = '0';
+                setTimeout(() => oldSlide.remove(), 1200);
+            }, 50);
         }
-
-        if (fileId) {
-            imgUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
-        }
-
-        document.getElementById('ancestorImage').src = imgUrl;
-        document.getElementById('ancestorName').innerText = slide.ancestorName;
-        document.getElementById('relationshipText').innerText = `Submitted by ${slide.submitterName} (${slide.relationship})`;
     }
 
     function nextSlide() {
-        if (slides.length > 0) {
-            currentIndex = (currentIndex + 1) % slides.length;
-            showSlide();
-        }
+        if (slidesData.length === 0) return;
+        currentIndex = (currentIndex + 1) % slidesData.length;
+        renderSlide(currentIndex);
     }
 
-    fetchSlides();
-    setInterval(fetchSlides, 30000); 
-    setInterval(nextSlide, 7000);    
+    function startTimer() {
+        if (timer) clearInterval(timer);
+        timer = setInterval(nextSlide, SLIDE_DURATION);
+    }
+
+    // Initial fetch
+    fetchSubmissions();
+
+    // Periodically fetch new submissions in background
+    setInterval(fetchSubmissions, REFRESH_INTERVAL);
 </script>
 
 </body>
