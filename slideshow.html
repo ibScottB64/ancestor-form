@@ -71,8 +71,8 @@
 </div>
 
 <script>
-    // REPLACE WITH YOUR WEB APP URL
-    const WEB_APP_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"; 
+    // PASTE YOUR NEW WEB APP URL BELOW
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzb3LTmrNDs-snNvwBq2X6IKOZXbFfr6Q9xctObouCubbD8hRnf5NNzWIKVq6JLuqNUFw/exec"; 
     
     let slides = [];
     let currentIndex = 0;
@@ -102,14 +102,12 @@
         let imgUrl = slide.imageUrl;
         let fileId = "";
 
-        // Extract Google Drive ID from standard view URL
         if (imgUrl.includes('/d/')) {
             fileId = imgUrl.split('/d/')[1].split('/')[0];
         } else if (imgUrl.includes('id=')) {
             fileId = imgUrl.split('id=')[1].split('&')[0];
         }
 
-        // Convert to high-res direct image thumbnail link
         if (fileId) {
             imgUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
         }
@@ -127,12 +125,9 @@
     }
 
     fetchSlides();
-    setInterval(fetchSlides, 30000); // Check for new entries every 30s
-    setInterval(nextSlide, 7000);    // Rotate slide every 7s
+    setInterval(fetchSlides, 30000); 
+    setInterval(nextSlide, 7000);    
 </script>
-
-</body>
-</html>
 
 </body>
 </html>
