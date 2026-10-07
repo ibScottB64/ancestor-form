@@ -90,22 +90,34 @@
     }
 
     function showSlide() {
-        if (slides.length === 0) return;
-        const slide = slides[currentIndex];
-        
-        let imgUrl = slide.imageUrl;
-        let fileIdMatch = imgUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-        if (fileIdMatch) {
-            imgUrl = `https://lh3.googleusercontent.com/d/${fileIdMatch[1]}`;
-        } else if (imgUrl.includes('id=')) {
-            const fileId = imgUrl.split('id=')[1].split('&')[0];
-            imgUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
-        }
+    if (slides.length === 0) return;
+    const slide = slides[currentIndex];
 
-        document.getElementById('ancestorImage').src = imgUrl;
-        document.getElementById('ancestorName').innerText = slide.ancestorName;
-        document.getElementById('relationshipText').innerText = `Submitted by ${slide.submitterName} (${slide.relationship})`;
+    let imgUrl = slide.imageUrl;
+    let fileId = "";
+
+    // Extract the unique Google Drive File ID regardless of URL format
+    if (imgUrl.includes('/d/')) {
+        let parts = imgUrl.split('/d/');
+        if (parts.length > 1) {
+            fileId = parts[1].split('/')[0];
+        }
+    } else if (imgUrl.includes('id=')) {
+        let parts = imgUrl.split('id=');
+        if (parts.length > 1) {
+            fileId = parts[1].split('&')[0];
+        }
     }
+
+    // Convert the Drive file ID into a direct public thumbnail/image link
+    if (fileId) {
+        imgUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
+    }
+
+    document.getElementById('ancestorImage').src = imgUrl;
+    document.getElementById('ancestorName').innerText = slide.ancestorName;
+    document.getElementById('relationshipText').innerText = `Submitted by ${slide.submitterName} (${slide.relationship})`;
+}
 
     function nextSlide() {
         if (slides.length > 0) {
