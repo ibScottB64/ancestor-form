@@ -106,7 +106,58 @@
 <script>
     // PASTE YOUR WEB APP URL BELOW BETWEEN THE QUOTES
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzBhReZN56zxvbw1PA1s9b7aVrXcrN9zwZzr19FYOvzhap_dK3qkapKk0sZbwwJf4Zn/exec";
-    
+
+    document.getElementById('submissionForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitterName = document.getElementById('submitterNameInput').value;
+        const ancestorName = document.getElementById('ancestorNameInput').value;
+        const relationship = document.getElementById('relationshipInput').value;
+        const fileInput = document.getElementById('photo');
+        
+        if (fileInput.files.length === 0) {
+            alert('Please select a photo.');
+            return;
+        }
+        
+        const file = fileInput.files[0];
+        const submitBtn = document.getElementById('submitBtn');
+        const loadingDiv = document.getElementById('loading');
+        
+        submitBtn.disabled = true;
+        loadingDiv.style.display = 'block';
+        
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function () {
+            const base64Data = reader.result.split(',')[1];
+            
+            const payload = new URLSearchParams();
+            payload.append('submitterName', submitterName);
+            payload.append('ancestorName', ancestorName);
+            payload.append('relationship', relationship);
+            payload.append('fileName', file.name);
+            payload.append('mimeType', file.type);
+            payload.append('fileData', base64Data);
+            
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: payload
+            })
+            .then(() => {
+                document.getElementById('submissionForm').style.display = 'none';
+                document.getElementById('success-message').style.display = 'block';
+            })
+            .catch(error => {
+                alert('Upload failed. Please try again.');
+                console.error(error);
+                submitBtn.disabled = false;
+                loadingDiv.style.display = 'none';
+            });
+        };
+    });
+</script>
+
     document.getElementById('submissionForm').action = WEB_APP_URL;
     let isSubmitted = false;
 
