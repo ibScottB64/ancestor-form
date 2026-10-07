@@ -61,7 +61,7 @@
     <h2>Ancestor Photo Submission</h2>
     <p class="subtitle">Share a photo and details of your ancestor for our event slideshow.</p>
     
-    <form id="submissionForm">
+    <form id="submissionForm" onsubmit="return handleFormSubmit(event)">
         <div class="form-group">
             <label for="submitterName">Your Name:</label>
             <input type="text" id="submitterName" required placeholder="e.g., Jane Doe">
@@ -100,7 +100,7 @@
     // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzb3LTmrNDs-snNvwBq2X6IKOZXbFfr6Q9xctObouCubbD8hRnf5NNzWIKVq6JLuqNUFw/exec";
 
-    document.getElementById('submissionForm').addEventListener('submit', function(e) {
+    function handleFormSubmit(e) {
         e.preventDefault();
 
         const submitBtn = document.getElementById('submitBtn');
@@ -109,26 +109,26 @@
 
         if (fileInput.files.length === 0) {
             alert("Please select a photo.");
-            return;
+            return false;
         }
 
         submitBtn.disabled = true;
         loadingDiv.style.display = 'block';
 
-        // 1. Upload photo directly to Imgbb API
+        // 1. Send file directly to ImgBB
         const formData = new FormData();
         formData.append("image", fileInput.files[0]);
 
-        fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        fetch("https://api.imgbb.com/1/upload?key=" + IMGBB_API_KEY, {
             method: "POST",
             body: formData
         })
-        .then(res => res.json())
-        .then(imgRes => {
+        .then(function(res) { return res.json(); })
+        .then(function(imgRes) {
             if (imgRes && imgRes.data && imgRes.data.url) {
                 const imageUrl = imgRes.data.url;
 
-                // 2. Send text metadata + direct Imgbb photo URL to Google Apps Script
+                // 2. Post ImgBB direct link + form metadata to Google Apps Script
                 const payload = new URLSearchParams();
                 payload.append('submitterName', document.getElementById('submitterName').value);
                 payload.append('ancestorName', document.getElementById('ancestorName').value);
@@ -140,19 +140,21 @@
                     body: payload
                 });
             } else {
-                throw new Error("Image upload to Imgbb failed.");
+                throw new Error("ImgBB upload failed. Check your API key.");
             }
         })
-        .then(() => {
+        .then(function() {
             document.getElementById('submissionForm').style.display = 'none';
             document.getElementById('success-message').style.display = 'block';
         })
-        .catch(err => {
-            alert("Submission error: " + err.message);
+        .catch(function(err) {
+            alert("Error: " + err.message);
             submitBtn.disabled = false;
             loadingDiv.style.display = 'none';
         });
-    });
+
+        return false;
+    }
 </script>
 
 </body>
