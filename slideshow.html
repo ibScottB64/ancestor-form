@@ -65,6 +65,7 @@
 
 <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzBhReZN56zxvbw1PA1s9b7aVrXcrN9zwZzr19FYOvzhap_dK3qkapKk0sZbwwJf4Zn/exec";
+
     let slides = [];
     let currentIndex = 0;
 
@@ -76,9 +77,7 @@
                     slides = data;
                     document.getElementById('status').style.display = 'none';
                     document.getElementById('slideContainer').style.display = 'flex';
-                    if (slides.length === 1 || currentIndex >= slides.length) {
-                        showSlide();
-                    }
+                    showSlide();
                 } else {
                     document.getElementById('status').innerText = "Waiting for submissions...";
                 }
@@ -90,34 +89,12 @@
     }
 
     function showSlide() {
-    if (slides.length === 0) return;
-    const slide = slides[currentIndex];
-
-    let imgUrl = slide.imageUrl;
-    let fileId = "";
-
-    // Extract the unique Google Drive File ID regardless of URL format
-    if (imgUrl.includes('/d/')) {
-        let parts = imgUrl.split('/d/');
-        if (parts.length > 1) {
-            fileId = parts[1].split('/')[0];
-        }
-    } else if (imgUrl.includes('id=')) {
-        let parts = imgUrl.split('id=');
-        if (parts.length > 1) {
-            fileId = parts[1].split('&')[0];
-        }
+        if (slides.length === 0) return;
+        const slide = slides[currentIndex];
+        document.getElementById('ancestorImage').src = slide.imageUrl;
+        document.getElementById('ancestorName').innerText = slide.ancestorName;
+        document.getElementById('relationshipText').innerText = `Submitted by ${slide.submitterName} (${slide.relationship})`;
     }
-
-    // Convert the Drive file ID into a direct public thumbnail/image link
-    if (fileId) {
-        imgUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
-    }
-
-    document.getElementById('ancestorImage').src = imgUrl;
-    document.getElementById('ancestorName').innerText = slide.ancestorName;
-    document.getElementById('relationshipText').innerText = `Submitted by ${slide.submitterName} (${slide.relationship})`;
-}
 
     function nextSlide() {
         if (slides.length > 0) {
@@ -127,8 +104,8 @@
     }
 
     fetchSlides();
-    setInterval(fetchSlides, 30000); // Check for new submissions every 30s
-    setInterval(nextSlide, 8000);   // Rotate slides every 8 seconds
+    setInterval(fetchSlides, 30000); // Check for new entries every 30 seconds
+    setInterval(nextSlide, 8000);    // Switch slides every 8 seconds
 </script>
 
 </body>
