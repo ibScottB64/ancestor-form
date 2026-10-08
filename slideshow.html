@@ -47,15 +47,13 @@
             z-index: 2;
         }
 
-        /* Image fills 100% of display height and width */
         .full-screen-img {
             width: 100vw;
             height: 100vh;
-            object-fit: contain; /* Forces top/bottom or left/right to hit display edges without distortion */
+            object-fit: contain;
             display: block;
         }
 
-        /* Overlay text directly on top of the image */
         .text-overlay {
             position: absolute;
             bottom: 5vh;
@@ -64,16 +62,15 @@
             width: 90vw;
             text-align: center;
             z-index: 3;
-            pointer-events: none; /* Allows clicks/touches to pass through */
+            pointer-events: none;
             padding: 10px;
         }
 
         .ancestor-name {
             font-size: clamp(2rem, 5vw, 4rem);
             font-weight: 900;
-            color: #111111; /* Dark font */
+            color: #111111;
             line-height: 1.1;
-            /* White glow and heavy drop shadow for high contrast */
             text-shadow: 
                 -2px -2px 0 #ffffff,
                  2px -2px 0 #ffffff,
@@ -86,7 +83,7 @@
         .relationship-info {
             font-size: clamp(1.2rem, 2.5vw, 2.2rem);
             font-weight: 800;
-            color: #1a1a1a; /* Dark font */
+            color: #1a1a1a;
             margin-top: 6px;
             text-shadow: 
                 -1.5px -1.5px 0 #ffffff,
@@ -98,11 +95,10 @@
         }
 
         .relationship-info span {
-            color: #004085; /* Dark blue accent for submitter name */
+            color: #004085;
             font-weight: 900;
         }
 
-        /* Loading / Waiting state */
         #status-screen {
             font-size: 1.2rem;
             color: #8b949e;
@@ -145,6 +141,15 @@
     let currentIndex = 0;
     let timer = null;
 
+    // Fisher-Yates Shuffle algorithm to randomize photos
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
     async function fetchSubmissions() {
         try {
             const response = await fetch(WEB_APP_URL);
@@ -160,7 +165,9 @@
             }
 
             const isFirstLoad = (slidesData.length === 0);
-            slidesData = validData;
+            
+            // Randomize the sequence on initial load or data updates
+            slidesData = shuffleArray(validData);
 
             if (isFirstLoad) {
                 initSlideshow();
@@ -212,6 +219,12 @@
     function nextSlide() {
         if (slidesData.length === 0) return;
         currentIndex = (currentIndex + 1) % slidesData.length;
+        
+        // Reshuffle array once a full loop completes so the next cycle is newly randomized
+        if (currentIndex === 0) {
+            slidesData = shuffleArray(slidesData);
+        }
+
         renderSlide(currentIndex);
     }
 
