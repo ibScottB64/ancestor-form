@@ -132,22 +132,23 @@
 
 <script>
     // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzb3LTmrNDs-snNvwBq2X6IKOZXbFfr6Q9xctObouCubbD8hRnf5NNzWIKVq6JLuqNUFw/exec";
+    const WEB_APP_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL";
 
-    const SLIDE_DURATION = 6000; // 6 seconds per photo
+    const SLIDE_DURATION = 12000; // 12 seconds per photo (doubled from 6s)
     const REFRESH_INTERVAL = 30000; // Check Google Sheet for new submissions every 30 seconds
 
     let slidesData = [];
     let currentIndex = 0;
     let timer = null;
 
-    // Fisher-Yates Shuffle algorithm to randomize photos
+    // Fisher-Yates Shuffle algorithm to randomize sequence
     function shuffleArray(array) {
-        for (let i = array.length - 1; i > 0; i--) {
+        let arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
+            [arr[i], arr[j]] = [arr[j], arr[i]];
         }
-        return array;
+        return arr;
     }
 
     async function fetchSubmissions() {
@@ -165,12 +166,19 @@
             }
 
             const isFirstLoad = (slidesData.length === 0);
-            
-            // Randomize the sequence on initial load or data updates
-            slidesData = shuffleArray(validData);
 
+            // On initial load, randomize the full set of photos
             if (isFirstLoad) {
+                slidesData = shuffleArray(validData);
                 initSlideshow();
+            } else {
+                // If new submissions arrived mid-cycle, append them seamlessly without disrupting the current pass
+                const existingUrls = new Set(slidesData.map(item => item.imageUrl));
+                const newItems = validData.filter(item => !existingUrls.has(item.imageUrl));
+                
+                if (newItems.length > 0) {
+                    slidesData.push(...shuffleArray(newItems));
+                }
             }
         } catch (error) {
             console.error("Error fetching slideshow data:", error);
@@ -218,10 +226,12 @@
 
     function nextSlide() {
         if (slidesData.length === 0) return;
-        currentIndex = (currentIndex + 1) % slidesData.length;
         
-        // Reshuffle array once a full loop completes so the next cycle is newly randomized
-        if (currentIndex === 0) {
+        currentIndex++;
+
+        // When all slides in the current deck have been shown, reshuffle for a new full cycle
+        if (currentIndex >= slidesData.length) {
+            currentIndex = 0;
             slidesData = shuffleArray(slidesData);
         }
 
