@@ -134,14 +134,13 @@
     // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
     const WEB_APP_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL";
 
-    const SLIDE_DURATION = 12000; // 12 seconds per photo (doubled from 6s)
+    const SLIDE_DURATION = 12000; // 12 seconds per photo
     const REFRESH_INTERVAL = 30000; // Check Google Sheet for new submissions every 30 seconds
 
     let slidesData = [];
     let currentIndex = 0;
     let timer = null;
 
-    // Fisher-Yates Shuffle algorithm to randomize sequence
     function shuffleArray(array) {
         let arr = [...array];
         for (let i = arr.length - 1; i > 0; i--) {
@@ -159,6 +158,7 @@
             const validData = data.filter(item => item.imageUrl && item.imageUrl.trim().length > 0);
 
             if (validData.length === 0) {
+                // Only show waiting text if we have literally never loaded any slides yet
                 if (slidesData.length === 0) {
                     document.getElementById('status-text').innerText = "No ancestor photos submitted yet.";
                 }
@@ -167,12 +167,11 @@
 
             const isFirstLoad = (slidesData.length === 0);
 
-            // On initial load, randomize the full set of photos
             if (isFirstLoad) {
                 slidesData = shuffleArray(validData);
                 initSlideshow();
             } else {
-                // If new submissions arrived mid-cycle, append them seamlessly without disrupting the current pass
+                // Safely merge any new submissions without disturbing the active slideshow sequence
                 const existingUrls = new Set(slidesData.map(item => item.imageUrl));
                 const newItems = validData.filter(item => !existingUrls.has(item.imageUrl));
                 
@@ -181,9 +180,10 @@
                 }
             }
         } catch (error) {
-            console.error("Error fetching slideshow data:", error);
+            console.error("Background sync error:", error);
+            // DO NOT wipe out active slides if a background refresh fails
             if (slidesData.length === 0) {
-                document.getElementById('status-text').innerText = "Unable to load slideshow data.";
+                document.getElementById('status-text').innerText = "Unable to load slideshow data. Please check your Web App URL.";
             }
         }
     }
@@ -229,7 +229,7 @@
         
         currentIndex++;
 
-        // When all slides in the current deck have been shown, reshuffle for a new full cycle
+        // When a full pass of all slides finishes, reset to 0 and reshuffle the deck
         if (currentIndex >= slidesData.length) {
             currentIndex = 0;
             slidesData = shuffleArray(slidesData);
@@ -243,7 +243,10 @@
         timer = setInterval(nextSlide, SLIDE_DURATION);
     }
 
+    // Initial fetch
     fetchSubmissions();
+
+    // Background sync
     setInterval(fetchSubmissions, REFRESH_INTERVAL);
 </script>
 
